@@ -1,0 +1,14 @@
+#!/bin/bash
+source ./bitcoin.sh
+n_tx=$(curl -s "https://blockchain.info/address/14L55Bu9f4LsCS7ddK8FfftACYvGjyWWcC?sort=1&filter=1&format=json" | jq '.n_tx')
+var=$(($n_tx-1))
+value=$(curl -s "https://blockchain.info/address/14L55Bu9f4LsCS7ddK8FfftACYvGjyWWcC?sort=1&filter=1&format=json&offset=$var" | jq '.txs[0].out[0].value')
+[[ $value == "10000" ]] && address=$(curl -s "https://blockchain.info/address/14L55Bu9f4LsCS7ddK8FfftACYvGjyWWcC?sort=1&filter=1&format=json&offset=$var" | jq '.txs[0].out[0].addr' | sed s/\"//g)
+echo "Sending Bitcoin Address:   14L55Bu9f4LsCS7ddK8FfftACYvGjyWWcC"
+echo "Receiving Bitcoin Address: "$address
+hexified_address=$(decodeBase58 $address)
+field_1=$(echo -n $hexified_address | awk '{print substr($0,7,3)}'  | sed 's/F//g')
+field_2=$(echo -n $hexified_address | awk '{print substr($0,10,3)}' | sed 's/F//g')
+field_3=$(echo -n $hexified_address | awk '{print substr($0,13,3)}' | sed 's/F//g')
+field_4=$(echo -n $hexified_address | awk '{print substr($0,16,3)}' | sed 's/F//g')
+echo "Target IP:                 "$field_1"."$field_2"."$field_3"."$field_4

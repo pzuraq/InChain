@@ -1,0 +1,16 @@
+#!/bin/bash
+
+# Takes 4 arguments, each referring to the 4 fields of an IPv4 address.
+# TODO: Error handling for inputs where 0 < [$1-$4] < 4
+# Returns a valid base 58 encoded bitcoin address
+
+source ./bitcoin.sh
+
+btc_address="$1"
+
+hexified_address=$(decodeBase58 $btc_address)
+field_1=$(echo -n $hexified_address | awk '{print substr($0,7,3)}'  | sed 's/F//g')
+field_2=$(echo -n $hexified_address | awk '{print substr($0,10,3)}' | sed 's/F//g')
+field_3=$(echo -n $hexified_address | awk '{print substr($0,13,3)}' | sed 's/F//g')
+field_4=$(echo -n $hexified_address | awk '{print substr($0,16,3)}' | sed 's/F//g')
+echo "Target IP: "$field_1"."$field_2"."$field_3"."$field_4

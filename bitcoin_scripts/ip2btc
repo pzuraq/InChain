@@ -1,0 +1,51 @@
+#!/bin/bash
+
+# Takes 4 arguments, each referring to the 4 fields of an IPv4 address.
+# TODO: Error handling for inputs where 0 < [$1-$4] < 4
+# Returns a valid base 58 encoded bitcoin address
+
+source ./bitcoin.sh
+
+# Extract the 4 IPv4 fields from passed parameters
+field_1="$1"
+field_2="$2"
+field_3="$3"
+field_4="$4"
+
+# unused
+len_1=${#field_1}
+len_2=${#field_2}
+len_3=${#field_3}
+len_4=${#field_4}
+
+# Pad each field with "F" to 3 characters
+#   Note: ${#variable} returns the length of $variable
+#         [[ boolean ]] is shorthand for "if"
+[[ ${#field_1} == 1 ]] && field_1="0"$field_1
+[[ ${#field_1} == 2 ]] && field_1=$field_1
+[[ ${#field_2} == 1 ]] && field_2="0"$field_2
+[[ ${#field_2} == 2 ]] && field_2=$field_2
+[[ ${#field_3} == 1 ]] && field_3="0"$field_3
+[[ ${#field_3} == 2 ]] && field_3=$field_3
+[[ ${#field_4} == 1 ]] && field_4="0"$field_4
+[[ ${#field_4} == 2 ]] && field_4=$field_4
+
+# Set address_header_hex to the first 21 bytes (in hex) of the address. No checksum.
+address_header_hex="001337"$field_1$field_2$field_3$field_4"FFFFFFFFFFFFFFFFFFFFFFFFFFFF"
+
+echo address_header_hex
+
+# Set checksum to the first 4 bytes of sha256(sha256(header))
+checksum=$(echo -n $address_header_hex | xxd -r -p | sha256sum -b | xxd -r -p | sha256sum -b | awk '{print substr($0,0,8)}')
+
+# Set checksum to all uppercase
+checksum="${checksum^^}"
+
+# The hexified bitcoin address is the concatenation of $address_header_hex and $checksum.
+hexified_btc_address=$address_header_hex$checksum
+
+# Convert the hexified address to a Base58 address proper
+btc_address=$(encodeBase58 $hexified_btc_address)
+echo "Address: "$btc_address
+
+
