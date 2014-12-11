@@ -1,9 +1,8 @@
 [package]
 
-name = "project"
+name = "InChain"
 version = "0.0.1"
-authors = [ "Your name <you@example.com>" ]
-
+authors = ["Chris Garrett <cmg@pzuraq.co>"]
 
 [dependencies.curl]
 
@@ -11,4 +10,4 @@ git = "https://github.com/carllerche/curl-rust"
 
 [[bin]]
 
-name = "project"
+name = "in_chain"

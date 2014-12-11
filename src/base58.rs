@@ -69,11 +69,11 @@ pub trait FromBase58 {
     for d58 in data.bytes() {
       // Compute "X = X * 58 + next_digit" in base 256
       if d58 as uint > BASE58_DIGITS.len() {
-        return Err(BadByte(d58));
+        return Err(Base58Error::BadByte(d58));
       }
       let mut carry = match BASE58_DIGITS[d58 as uint] {
         Some(d58) => d58 as u32,
-        None => { return Err(BadByte(d58)); }
+        None => { return Err(Base58Error::BadByte(d58)); }
       };
       for d256 in scratch.iter_mut().rev() {
         carry += *d256 as u32 * 58;
